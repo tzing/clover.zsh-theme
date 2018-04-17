@@ -298,7 +298,7 @@ clover_virtualenv_info() {
     # anaconda
     local condapath=$CONDA_ENV_PATH$CONDA_PREFIX
     if [ -n "$condapath" ]; then
-	local name=$(basename $condapath)
+        local name=$(basename $condapath)
     fi
 
     # display name

@@ -45,7 +45,7 @@
 
 ```sh
 cd ${ZSH_CUSTOM:-"~/.oh-my-zsh/custom"}/themes
-git clone git@github.com:tzing/clover.zsh-theme.git clover
+git clone git@github.com:tzing/clover.zsh-theme.git clover --recursive
 ```
 
 then change the theme to Clover.
