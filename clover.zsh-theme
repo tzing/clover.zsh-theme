@@ -1,8 +1,12 @@
 #!/usr/zsh
 # Clover
-# 🍀 a configurable theme for oh-my-zsh theme
+# 🍀 a configurable theme for zsh
 #
-# MIT license 2018 tzing
+# MIT license 2018-2019 tzing
+
+# zsh misc
+autoload -U colors && colors
+autoload -U add-zsh-hook
 
 # colors
 typeset -gA clover_color
@@ -62,7 +66,8 @@ typeset -g clover_basedir=${0:A:h}
 # functions
 clover_setup() {
     # dependency
-    source $clover_basedir/lib/async/async.zsh
+    source $clover_basedir/lib/git.zsh
+    source $clover_basedir/lib/async.zsh
 
     # register hook
     add-zsh-hook precmd clover_precmd
