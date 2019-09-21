@@ -34,6 +34,12 @@
 - Current time
 - Python virtual environment name
 - Prompt indicator changes if the last run fails (🍀/🔥)
+- Symbols and colours are configurable, see `clover.zsh-theme`.
+
+
+## Environment
+
+This script is tested on zsh 5.0.2.
 
 
 ## Installation

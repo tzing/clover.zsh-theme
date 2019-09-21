@@ -10,31 +10,31 @@ autoload -U add-zsh-hook
 
 # colors
 typeset -gA clover_color
-clover_color[host_info]=$fg[blue]
-clover_color[user]=$fg_bold[green]
-clover_color[host]=$fg_bold[cyan]
-clover_color[host_remote]=$fg_bold[cyan]$bg[blue]
-clover_color[dir]=$fg_bold[yellow]
-clover_color[currtime]=$fg[blue]
-clover_color[exectime]=$fg[grey]
-clover_color[venv]=$fg[grey]
-clover_color[prompt]=$fg[green]
-clover_color[prompt_fail]=$fg[red]
+clover_color[host_info]="$fg[blue]"
+clover_color[user]="$fg_bold[green]"
+clover_color[host]="$fg_bold[cyan]"
+clover_color[host_remote]="$fg_bold[cyan]$bg[blue]"
+clover_color[dir]="$fg_bold[yellow]"
+clover_color[currtime]="$fg[blue]"
+clover_color[exectime]="$fg[grey]"
+clover_color[venv]="$fg[grey]"
+clover_color[prompt]="$fg[green]"
+clover_color[prompt_fail]="$fg[red]"
 
 # colors of git status
 typeset -gA clover_gcolor
-clover_gcolor[head]=$fg_bold[blue]
-clover_gcolor[clean]=$fg_bold[green]
-clover_gcolor[dirty]=$fg_bold[red]
-clover_gcolor[add]=$fg_bold[green]
-clover_gcolor[del]=$fg_bold[red]
-clover_gcolor[modify]=$fg_bold[magenta]
-clover_gcolor[rename]=$fg_bold[blue]
-clover_gcolor[unmerge]=$fg_bold[cyan]
-clover_gcolor[untrack]=$fg_bold[yellow]
-clover_gcolor[ahead]=$fg_bold[cyan]
-clover_gcolor[behind]=$fg_bold[magenta]
-clover_gcolor[diverge]=$fg_bold[red]
+clover_gcolor[head]="$fg_bold[blue]"
+clover_gcolor[clean]="$fg_bold[green]"
+clover_gcolor[dirty]="$fg_bold[red]"
+clover_gcolor[add]="$fg_bold[green]"
+clover_gcolor[del]="$fg_bold[red]"
+clover_gcolor[modify]="$fg_bold[magenta]"
+clover_gcolor[rename]="$fg_bold[blue]"
+clover_gcolor[unmerge]="$fg_bold[cyan]"
+clover_gcolor[untrack]="$fg_bold[yellow]"
+clover_gcolor[ahead]="$fg_bold[cyan]"
+clover_gcolor[behind]="$fg_bold[magenta]"
+clover_gcolor[diverge]="$fg_bold[red]"
 
 # symbols of git status
 typeset -gA clover_sym
@@ -59,15 +59,15 @@ clover_gsym[behind]="⇣"
 clover_gsym[diverge]="⇕"
 
 # constant
-typeset -g clover_hide_elasped_time=10
-typeset -g clover_basedir=${0:A:h}
+typeset -g clover_hide_elasped_time="10"
+typeset -g clover_basedir="${0:A:h}"
 
 
 # functions
 clover_setup() {
     # dependency
-    source $clover_basedir/lib/git.zsh
-    source $clover_basedir/lib/async.zsh
+    source "$clover_basedir/lib/git.zsh"
+    source "$clover_basedir/lib/async.zsh"
 
     # register hook
     add-zsh-hook precmd clover_precmd
@@ -103,7 +103,8 @@ clover_setup() {
     fi
 
     # host
-    local precmd=(
+    local precmd
+    precmd=(
         # prefix
         "%{$clover_color[host_info]%}"
         $clover_sym[host_prefix]
@@ -150,7 +151,7 @@ clover_precmd() {
     local exit_code=$?
 
     # initialize async worker
-    if [[ !${clover_async_init:-0} ]]; then
+    if (( !${+clover_async_init} )); then
         async_start_worker "prompt_clover" -n
         async_register_callback "prompt_clover" clover_precmd_callback
         typeset -g clover_async_init=1
@@ -169,7 +170,8 @@ clover_precmd() {
     fi
 
     # time
-    local rps=(
+    local rps
+    rps=(
         # elasped time
         $elasped_time
 
@@ -184,7 +186,7 @@ clover_precmd() {
     typeset -g clover_rprompt="${(j..)rps}"
 
     # venv
-    typeset -g clover_venv_info=$(clover_virtualenv_info)
+    typeset -g clover_venv_info="$(clover_virtualenv_info)"
 
     # status
     typeset -g clover_prompt
@@ -198,14 +200,14 @@ clover_precmd() {
 }
 
 clover_preexec() {
-    typeset -g clover_last_timestamp=$((EPOCHSECONDS))
+    typeset -g clover_last_timestamp="$((EPOCHSECONDS))"
 }
 
 clover_precmd_callback() {
-    local job=$1 code=$2 output=$3 exec_time=$4 next_pending=$6
+    local job="$1" code="$2" output="$3" exec_time="$4" next_pending="$6"
     case $job in
         clover_git_prompt_info)
-            typeset -g clover_git_status=$output
+            typeset -g clover_git_status="$output"
         ;;
     esac
 
@@ -213,10 +215,11 @@ clover_precmd_callback() {
 }
 
 clover_render_prompt() {
-    local lprompt=$clover_lprompt0$clover_git_status
-    local precmd=$lprompt$(clover_get_space $lprompt $clover_rprompt)$clover_rprompt
+    local lprompt="$clover_lprompt0$clover_git_status"
+    local precmd="$lprompt$(clover_get_space $lprompt $clover_rprompt)$clover_rprompt"
 
-    local ps1=(
+    local ps1
+    ps1=(
         # precmd
         $precmd
 
@@ -242,25 +245,25 @@ clover_render_prompt() {
         zle && zle .reset-prompt
     fi
 
-    typeset -g clover_last_prompt=$expanded_prompt
+    typeset -g clover_last_prompt="$expanded_prompt"
 }
 
 clover_git_prompt_info() {
     builtin cd -q $1
-    local git_head=$(git_prompt_info)
+    local git_head="$(git_prompt_info)"
     if [[ -n $git_head ]]; then
         local git_detail
 
         # git status
         local git_status="$(git_prompt_status)"
         if [[ -n $git_status ]]; then
-            git_detail=$git_detail$git_status
+            git_detail="$git_detail$git_status"
         fi
 
         # git remote
-        local git_remote=$(git_remote_status)
+        local git_remote="$(git_remote_status)"
         if [[ -n $git_remote ]]; then
-            git_detail=$git_detail$git_remote
+            git_detail="$git_detail$git_remote"
         fi
 
         # output
@@ -274,14 +277,14 @@ clover_git_prompt_info() {
 # get space to padding between lprompt and rprompt
 # https://github.com/skylerlee/zeta-zsh-theme
 clover_get_space() {
-    local str=$1$2
+    local str="$1$2"
     local zero='%([BSUbfksu]|([FB]|){*})'
-    local len=${#${(S%%)str//$~zero/}}
-    local size=$(( $COLUMNS - $len - 1 ))
+    local len="${#${(S%%)str//$~zero/}}"
+    local size="$(( $COLUMNS - $len - 1 ))"
     local space=""
     while [[ $size -gt 0 ]]; do
         space="$space "
-        let size=$size-1
+        let size="$size-1"
     done
     echo $space
 }
@@ -294,16 +297,16 @@ clover_virtualenv_info() {
         if [ -f "$VIRTUAL_ENV/__name__" ]; then
             local name=`cat $VIRTUAL_ENV/__name__`
         elif [ `basename $VIRTUAL_ENV` = "__" ]; then
-            local name=$(basename $(dirname $VIRTUAL_ENV))
+            local name="$(basename $(dirname $VIRTUAL_ENV))"
         else
-            local name=$(basename $VIRTUAL_ENV)
+            local name="$(basename $VIRTUAL_ENV)"
         fi
     fi
 
     # anaconda
-    local condapath=$CONDA_ENV_PATH$CONDA_PREFIX
+    local condapath="$CONDA_ENV_PATH$CONDA_PREFIX"
     if [ -n "$condapath" ]; then
-        local name=$(basename $condapath)
+        local name="$(basename $condapath)"
     fi
 
     # display name
@@ -316,11 +319,11 @@ clover_virtualenv_info() {
 # 165392 => 1d 21h 56m 32s
 # https://github.com/sindresorhus/pretty-time-zsh
 clover_readable_time() {
-    local human total_seconds=$1
-    local days=$(( total_seconds / 60 / 60 / 24 ))
-    local hours=$(( total_seconds / 60 / 60 % 24 ))
-    local minutes=$(( total_seconds / 60 % 60 ))
-    local seconds=$(( total_seconds % 60 ))
+    local human total_seconds="$1"
+    local days="$(( total_seconds / 60 / 60 / 24 ))"
+    local hours="$(( total_seconds / 60 / 60 % 24 ))"
+    local minutes="$(( total_seconds / 60 % 60 ))"
+    local seconds="$(( total_seconds % 60 ))"
     (( days > 0 )) && human+="${days}d "
     (( hours > 0 )) && human+="${hours}h "
     (( minutes > 0 )) && human+="${minutes}m "
