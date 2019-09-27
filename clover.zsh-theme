@@ -58,6 +58,9 @@ clover_gsym[ahead]="⇡"
 clover_gsym[behind]="⇣"
 clover_gsym[diverge]="⇕"
 
+# format
+clover_date_format='%H:%M:%S %z'
+
 # constant
 typeset -g clover_hide_elasped_time="10"
 typeset -g clover_basedir="${0:A:h}"
@@ -179,7 +182,7 @@ clover_precmd() {
         "%{$reset_color%}"
         "("
         "%{$clover_color[currtime]%}"
-        "%*"
+        "$(date +$clover_date_format)"
         "%{$reset_color%}"
         ") "
     )
