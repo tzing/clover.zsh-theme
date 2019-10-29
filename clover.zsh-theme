@@ -110,24 +110,24 @@ clover_setup() {
     precmd=(
         # prefix
         "%{$clover_color[host_info]%}"
-        $clover_sym[host_prefix]
+        "$clover_sym[host_prefix]"
 
         # user
-        $color_user
+        "$color_user"
         "%n"
 
         # splitter
         "%{$clover_color[host_info]%}"
-        $clover_sym[host_split]
+        "$clover_sym[host_split]"
 
         # host
-        $color_host
+        "$color_host"
         "%m"
         "%{$reset_color%}"
 
         # suffix
         "%{$clover_color[host]%}"
-        $clover_sym[host_suffix]
+        "$clover_sym[host_suffix]"
 
         # dir
         "%{$clover_color[dir]%}"
@@ -162,7 +162,7 @@ clover_precmd() {
 
     # git
     unset clover_git_status
-    async_job "prompt_clover" clover_git_prompt_info $PWD
+    async_job "prompt_clover" clover_git_prompt_info "$PWD"
 
     # elasped time
     local elasped_time=$((EPOCHSECONDS - ${clover_last_timestamp:-EPOCHSECONDS}))
@@ -252,7 +252,7 @@ clover_render_prompt() {
 }
 
 clover_git_prompt_info() {
-    builtin cd -q $1
+    builtin cd -q "$1"
     local git_head="$(git_prompt_info)"
     if [[ -n $git_head ]]; then
         local git_detail
@@ -287,9 +287,9 @@ clover_get_space() {
     local space=""
     while [[ $size -gt 0 ]]; do
         space="$space "
-        let size="$size-1"
+        size="$(( $size - 1 ))"
     done
-    echo $space
+    echo "$space"
 }
 
 # get python env name
@@ -298,23 +298,23 @@ clover_virtualenv_info() {
     # https://github.com/tonyseek/oh-my-zsh-virtualenv-prompt
     if [ -n "$VIRTUAL_ENV" ]; then
         if [ -f "$VIRTUAL_ENV/__name__" ]; then
-            local name=`cat $VIRTUAL_ENV/__name__`
-        elif [ `basename $VIRTUAL_ENV` = "__" ]; then
-            local name="$(basename $(dirname $VIRTUAL_ENV))"
+            local env_name=$(cat "$VIRTUAL_ENV/__name__")
+        elif [ $(basename "$VIRTUAL_ENV") = "__" ]; then
+            local env_name=$(basename $(dirname "$VIRTUAL_ENV"))
         else
-            local name="$(basename $VIRTUAL_ENV)"
+            local env_name=$(basename "$VIRTUAL_ENV")
         fi
     fi
 
     # anaconda
     local condapath="$CONDA_ENV_PATH$CONDA_PREFIX"
     if [ -n "$condapath" ]; then
-        local name="$(basename $condapath)"
+        local env_name=$(basename "$condapath")
     fi
 
     # display name
-    if [ -n "$name" ]; then
-        echo "%{$clover_color[venv]%}($name) "
+    if [ -n "$env_name" ]; then
+        echo "%{$clover_color[venv]%}($env_name) "
     fi
 }
 
