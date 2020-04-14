@@ -2,7 +2,7 @@
 # Clover
 # 🍀 a configurable theme for zsh
 #
-# MIT license 2018-2019 tzing
+# MIT license 2018-2020 tzing
 
 # zsh misc
 autoload -U colors && colors
@@ -41,8 +41,8 @@ typeset -gA clover_sym
 clover_sym[host_prefix]="# "
 clover_sym[host_split]="@"
 clover_sym[host_suffix]=": "
-clover_sym[prompt]="🍀 "
-clover_sym[prompt_fail]="🔥 "
+clover_sym[prompt]="%2{🍀%} "  # enusre width of 2 characters
+clover_sym[prompt_fail]="%2{🔥%} "
 
 # symbols of git status
 typeset -gA clover_gsym
