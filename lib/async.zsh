@@ -3,12 +3,12 @@
 #
 # zsh-async
 #
-# version: 1.8.0
+# version: v1.8.5
 # author: Mathias Fredriksson
 # url: https://github.com/mafredri/zsh-async
 #
 
-typeset -g ASYNC_VERSION=1.8.0
+typeset -g ASYNC_VERSION=1.8.5
 # Produce debug output from zsh-async when set to 1.
 typeset -g ASYNC_DEBUG=${ASYNC_DEBUG:-0}
 
@@ -325,7 +325,7 @@ async_process_results() {
 			else
 				# In case of corrupt data, invoke callback with *async* as job
 				# name, non-zero exit status and an error message on stderr.
-				$callback "[async]" 1 "" 0 "$0:$LINENO: error: bad format, got ${#items} items (${(q)items})" $has_next
+				$callback "[async]" 1 "" 0 "$0:$LINENO: error: bad format, got ${#items} items (${(q)items})" $has_next
 			fi
 		done
 	done
@@ -531,7 +531,7 @@ async_flush_jobs() {
 # 	-p pid to notify (defaults to current pid)
 #
 async_start_worker() {
-	setopt localoptions noshwordsplit
+	setopt localoptions noshwordsplit noclobber
 
 	local worker=$1; shift
 	local -a args
@@ -541,13 +541,6 @@ async_start_worker() {
 	typeset -gA ASYNC_PTYS
 	typeset -h REPLY
 	typeset has_xtrace=0
-
-	# Make sure async worker is started without xtrace
-	# (the trace output interferes with the worker).
-	[[ -o xtrace ]] && {
-		has_xtrace=1
-		unsetopt xtrace
-	}
 
 	if [[ -o interactive ]] && [[ -o zle ]]; then
 		# Inform the worker to ignore the notify flag and that we're
@@ -563,13 +556,39 @@ async_start_worker() {
 		fi
 	fi
 
-	zpty -b $worker _async_worker -p $$ $args || {
-		async_stop_worker $worker
-		return 1
+	# Workaround for stderr in the main shell sometimes (incorrectly) being
+	# reassigned to /dev/null by the reassignment done inside the async
+	# worker.
+	# See https://github.com/mafredri/zsh-async/issues/35.
+	integer errfd=-1
+
+	# Redirect of errfd is broken on zsh 5.0.2.
+	if is-at-least 5.0.8; then
+		exec {errfd}>&2
+	fi
+
+	# Make sure async worker is started without xtrace
+	# (the trace output interferes with the worker).
+	[[ -o xtrace ]] && {
+		has_xtrace=1
+		unsetopt xtrace
 	}
+
+	if (( errfd != -1 )); then
+		zpty -b $worker _async_worker -p $$ $args 2>&$errfd
+	else
+		zpty -b $worker _async_worker -p $$ $args
+	fi
+	local ret=$?
 
 	# Re-enable it if it was enabled, for debugging.
 	(( has_xtrace )) && setopt xtrace
+	(( errfd != -1 )) && exec {errfd}>& -
+
+	if (( ret )); then
+		async_stop_worker $worker
+		return 1
+	fi
 
 	if ! is-at-least 5.0.8; then
 		# For ZSH versions older than 5.0.8 we delay a bit to give
