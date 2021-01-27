@@ -26,9 +26,9 @@ function git_prompt_info() {
 
   local ref
   ref=$(__git_prompt_git symbolic-ref --short HEAD 2> /dev/null) \
-  || ref=$(__git_prompt_git tag --points-at HEAD 2> /dev/null | head -1) \
-  || ref=$(__git_prompt_git rev-parse --short HEAD 2> /dev/null) \
-  || return 0
+  || ref=$(__git_prompt_git tag --points-at HEAD 2> /dev/null | head -1)
+  [[ -z "$ref" ]] && ref=$(__git_prompt_git rev-parse --short HEAD 2> /dev/null)
+  [[ -z "$ref" ]] && return 0
 
   # Use global ZSH_THEME_GIT_SHOW_UPSTREAM=1 for including upstream remote info
   local upstream
