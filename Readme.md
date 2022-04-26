@@ -9,13 +9,10 @@
 [pure]: https://github.com/sindresorhus/pure
 
 
-## Feature
+## Features
 
-- User name
-- Machine name
-    - change color on remote session
-- Current working directory
-- Git
+- User name and hostname changes the color for root user and remote session
+- Git status is provided **and work asynchronously**
     - current branch
     - status
         * `✔` — clean branch
@@ -28,13 +25,11 @@
         * `?` — untracked changes
         * `⇡` — ahead of remote branch
         * `⇣` — behind of remote branch
-        * `⇕` — diverged chages
-    - works async
-- Last execution time
-- Current time
+        * `⇕` — diverged changes
+- Last execution time for long-run programs
 - Python virtual environment name
-- Prompt indicator changes if the last run fails (🍀/🔥)
-- Symbols and colours are configurable, see `clover.zsh-theme`.
+- Prompt indicator changes whether the last run success (🍀/🔥)
+- Symbols and colours are configurable, see [clover.zsh-theme](clover.zsh-theme).
 
 
 ## Environment
@@ -44,34 +39,37 @@ This script is tested on zsh 5.0.2.
 
 ## Installation
 
-#### use with oh-my-zsh
+#### [oh-my-zsh](https://github.com/ohmyzsh/ohmyzsh)
 
-```sh
+clone this repo into `$ZSH_CUSTOM`:
+
+```bash
 cd ${ZSH_CUSTOM:-"~/.oh-my-zsh/custom"}/themes
 git clone git@github.com:tzing/clover.zsh-theme.git clover
 ```
 
-then change the theme to Clover.
+then change the theme:
 
 ```zsh
 ZSH_THEME="clover/clover"
 ```
 
-✨🍰✨
+#### [zinit](https://github.com/zdharma-continuum/zinit)
 
+```zsh
+zinit light tzing/clover.zsh-theme
+```
 
-#### manually
+#### Manual
 
-Clone this repo to somewhere you like.
+clone this repo to somewhere you like:
 
 ```sh
 git clone git@github.com:tzing/clover.zsh-theme.git <PATH>
 ```
 
-and source this theme in your `.zshrc`
+and source the main script in your `.zshrc`
 
 ```zsh
 source <PATH>/clover.zsh-theme
 ```
-
-✨🍰✨
