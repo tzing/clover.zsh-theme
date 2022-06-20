@@ -26,7 +26,9 @@ function git_prompt_info() {
 
   local ref
   ref=$(__git_prompt_git symbolic-ref --short HEAD 2> /dev/null) \
-  || ref=$(__git_prompt_git tag --points-at HEAD 2> /dev/null | head -n 1) \
+  || ref=$(__git_prompt_git tag --points-at HEAD 2> /dev/null | head -n 1)
+
+  [[ -n "$ref" ]] \
   || ref=$(__git_prompt_git rev-parse --short HEAD 2> /dev/null) \
   || return 0
 

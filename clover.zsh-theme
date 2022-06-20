@@ -2,7 +2,7 @@
 # Clover
 # 🍀 a configurable theme for zsh
 #
-# MIT license 2018-2020 tzing
+# MIT license 2018-2022 tzing
 
 # zsh misc
 autoload -U colors && colors
