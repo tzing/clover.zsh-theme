@@ -1,339 +1,542 @@
-#!/usr/zsh
-# Clover
-# 🍀 a configurable theme for zsh
+#! /usr/bin/env zsh
+# Clover 🍀
+# - a configurable theme for zsh
 #
-# MIT license 2018-2022 tzing
+# MIT license 2023 tzing
 
-# zsh misc
-autoload -U colors && colors
-autoload -U add-zsh-hook
+typeset -gA prompt_clover_styles prompt_clover_symbols prompt_clover_params
+prompt_clover_styles=(
+	current-time            '%F{blue}'
+	execution-time          '%F{242}'
+	host:default            '%B%F{cyan}'
+	host:container          '%B%F{white}%K{magenta}'
+	host:remote             '%B%F{white}%K{blue}'
+	path                    '%B%F{yellow}'
+	prompt:default          '%F{green}'
+	prompt:fail             '%F{red}'
+	symbol:prefix           '%F{blue}'
+	user:default            '%B%F{green}'
+	user:root               '%B%F{white}%K{red}'
+	vcs:action              '%F{red}'
+	vcs:branch              '%B%F{blue}'
+	vcs:status:ahead        '%F{cyan}'
+	vcs:status:behind       '%F{magenta}'
+	vcs:status:clean        '%F{green}'
+	vcs:status:diverge      '%F{red}'
+	vcs:status:staged       '%F{green}'
+	vcs:status:unstaged     '%F{magenta}'
+	vcs:status:untracked    '%F{242}'
+	virtualenv              '%F{242}'
+)
 
-# colors
-typeset -gA clover_color
-clover_color[host_info]="$fg[blue]"
-clover_color[user]="$fg_bold[green]"
-clover_color[host]="$fg_bold[cyan]"
-clover_color[host_remote]="$fg_bold[cyan]$bg[blue]"
-clover_color[dir]="$fg_bold[yellow]"
-clover_color[currtime]="$fg[blue]"
-clover_color[exectime]="$fg[grey]"
-clover_color[venv]="$fg[grey]"
-clover_color[prompt]="$fg[green]"
-clover_color[prompt_fail]="$fg[red]"
+prompt_clover_symbols=(
+	current-time:prefix     '('
+	current-time:suffix     ')'
+	host:prefix             '@'
+	path:prefix             ': '
+	prompt:default          '%2{🍀%} '
+	prompt:fail             '%2{🔥%} '
+	user:prefix             '#  '
+	vcs:prefix              ' <'
+	vcs:status:ahead        '⇡'
+	vcs:status:behind       '⇣'
+	vcs:status:clean        '✔'
+	vcs:status:diverge      '⇕'
+	vcs:status:staged       '≡'
+	vcs:status:unstaged     '✱'
+	vcs:status:untracked    '?'
+	vcs:suffix              '>'
+	venv:prefix             '('
+	venv:suffix             ') '
+)
 
-# colors of git status
-typeset -gA clover_gcolor
-clover_gcolor[head]="$fg_bold[blue]"
-clover_gcolor[clean]="$fg_bold[green]"
-clover_gcolor[dirty]="$fg_bold[red]"
-clover_gcolor[add]="$fg_bold[green]"
-clover_gcolor[del]="$fg_bold[red]"
-clover_gcolor[modify]="$fg_bold[magenta]"
-clover_gcolor[rename]="$fg_bold[blue]"
-clover_gcolor[unmerge]="$fg_bold[cyan]"
-clover_gcolor[untrack]="$fg_bold[yellow]"
-clover_gcolor[ahead]="$fg_bold[cyan]"
-clover_gcolor[behind]="$fg_bold[magenta]"
-clover_gcolor[diverge]="$fg_bold[red]"
+prompt_clover_params=(
+	basedir                 "${0:A:h}"
+	date-format             '%H:%M:%S %z'
+	min-exec-display-sec    '5'
+	reset                   '%b%u%f%k'
+	zstyle-prefix           ':prompt:clover:'
+)
 
-# symbols of git status
-typeset -gA clover_sym
-clover_sym[host_prefix]="# "
-clover_sym[host_split]="@"
-clover_sym[host_suffix]=": "
-clover_sym[prompt]="%2{🍀%} "  # enusre width of 2 characters
-clover_sym[prompt_fail]="%2{🔥%} "
+prompt_clover:setup() {
+	autoload -U add-zsh-hook
+	autoload -U vcs_info
 
-# symbols of git status
-typeset -gA clover_gsym
-clover_gsym[clean]=" ✔ "
-clover_gsym[dirty]=" ✘ "
-clover_gsym[add]="+"
-clover_gsym[del]="-"
-clover_gsym[modify]="*"
-clover_gsym[rename]=">"
-clover_gsym[unmerge]="="
-clover_gsym[untrack]="?"
-clover_gsym[ahead]="⇡"
-clover_gsym[behind]="⇣"
-clover_gsym[diverge]="⇕"
+	# vendoring
+	fpath+=("${prompt_clover_params[basedir]}")
+	autoload -Uz async && async
 
-# format
-clover_date_format='%H:%M:%S %z'
+	# hooks
+	add-zsh-hook precmd prompt_clover:precmd
+	add-zsh-hook preexec prompt_clover:preexec
 
-# constant
-typeset -g clover_hide_elasped_time="10"
-typeset -g clover_basedir="${0:A:h}"
+	# some env setup
+	if [[ -z $prompt_newline ]]; then
+		typeset -g prompt_newline=$'\n%{\r%}'
+	fi
 
-
-# functions
-clover_setup() {
-    # dependency
-    source "$clover_basedir/lib/git.zsh"
-    source "$clover_basedir/lib/async.zsh"
-
-    # register hook
-    add-zsh-hook precmd clover_precmd
-    add-zsh-hook preexec clover_preexec
-
-    # git
-    ZSH_THEME_GIT_PROMPT_PREFIX="%{$clover_gcolor[head]%}"
-    ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
-
-    ZSH_THEME_GIT_PROMPT_CLEAN="%{$clover_gcolor[clean]%}$clover_gsym[clean]%{$reset_color%}"
-    ZSH_THEME_GIT_PROMPT_DIRTY="%{$clover_gcolor[dirty]%}$clover_gsym[dirty]%{$reset_color%}"
-
-    ZSH_THEME_GIT_PROMPT_ADDED="%{$clover_gcolor[add]%}$clover_gsym[add]"
-    ZSH_THEME_GIT_PROMPT_DELETED="%{$clover_gcolor[del]%}$clover_gsym[del]"
-    ZSH_THEME_GIT_PROMPT_MODIFIED="%{$clover_gcolor[modify]%}$clover_gsym[modify]"
-    ZSH_THEME_GIT_PROMPT_RENAMED="%{$clover_gcolor[rename]%}$clover_gsym[rename]"
-    ZSH_THEME_GIT_PROMPT_UNMERGED="%{$clover_gcolor[unmerge]%}$clover_gsym[unmerge]"
-    ZSH_THEME_GIT_PROMPT_UNTRACKED="%{$clover_gcolor[untrack]%}$clover_gsym[untrack]"
-    ZSH_THEME_GIT_PROMPT_AHEAD_REMOTE="%{$clover_gcolor[ahead]%}$clover_gsym[ahead]%{$reset_color%}"
-    ZSH_THEME_GIT_PROMPT_BEHIND_REMOTE="%{$clover_gcolor[behind]%}$clover_gsym[behind]%{$reset_color%}"
-    ZSH_THEME_GIT_PROMPT_DIVERGED_REMOTE="%{$clover_gcolor[diverge]%}$clover_gsym[diverge]%{$reset_color%}"
-
-    # user name
-    local color_user="%{$clover_color[user]%}"
-    if [[ $UID -eq 0 ]]; then
-        color_user="%{$bg[red]%}%{$fg_bold[white]%}"
-    fi
-
-    # hostname
-    local color_host="%{$clover_color[host]%}"
-    if [[ "$SSH_CONNECTION" != '' ]]; then
-        color_host="%{$clover_color[host_remote]%}"
-    fi
-
-    # host
-    local precmd
-    precmd=(
-        # prefix
-        "%{$clover_color[host_info]%}"
-        "$clover_sym[host_prefix]"
-
-        # user
-        "$color_user"
-        "%n"
-
-        # splitter
-        "%{$clover_color[host_info]%}"
-        "$clover_sym[host_split]"
-
-        # host
-        "$color_host"
-        "%m"
-        "%{$reset_color%}"
-
-        # suffix
-        "%{$clover_color[host]%}"
-        "$clover_sym[host_suffix]"
-
-        # dir
-        "%{$clover_color[dir]%}"
-        "%~"
-        "%{$reset_color%}"
-    )
-
-    typeset -g clover_lprompt0="${(j..)precmd}"
-
-    # newline
-    if [[ -z $prompt_newline ]]; then
-        # This variable needs to be set, usually set by promptinit.
-        typeset -g prompt_newline=$'\n%{\r%}'
-    fi
-
-    # some env setup
-    export PROMPT_EOL_MARK=''
-    export VIRTUAL_ENV_DISABLE_PROMPT=1
-
-    setopt prompt_subst
+	export PROMPT_EOL_MARK=''
+	export VIRTUAL_ENV_DISABLE_PROMPT=1
+	export CONDA_CHANGEPS1=no
 }
 
-clover_precmd() {
-    local exit_code=$?
+prompt_clover:precmd() {
+	local exit_code=$?
 
-    # initialize async worker
-    if (( !${+clover_async_init} )); then
-        async_start_worker "prompt_clover" -n
-        async_register_callback "prompt_clover" clover_precmd_callback
-        typeset -g clover_async_init=1
-    fi
+	# init async
+	if [[ -z "${prompt_clover_params[async-init]}" ]]; then
+		async_start_worker prompt_clover_vcs -n
+		async_register_callback prompt_clover_vcs prompt_clover:render-prompt
+		prompt_clover_params[async-init]='true'
+	fi
 
-    # git
-    unset clover_git_status
-    async_job "prompt_clover" clover_git_prompt_info "$PWD"
+	# reset background job
+	async_flush_jobs prompt_clover_vcs
 
-    # elasped time
-    local elasped_time=$((EPOCHSECONDS - ${clover_last_timestamp:-EPOCHSECONDS}))
-    if (( $elasped_time >= $clover_hide_elasped_time )); then
-        elasped_time="%{$clover_color[exectime]%}$(clover_readable_time $elasped_time) "
-    else
-        elasped_time=""
-    fi
+	# flags
+	local flag
+	if prompt_clover:helper:check-style-changed main; then
+		# rebuild prompt template on style changed
+		flag+='-rebuild '
+	fi
+	if [[ -n ${prompt_clover_params[lastcmd]} ]]; then
+		# calculate execution time when last command is not empty
+		prompt_clover_params[lastcmd]=
+		flag+='-exec-time '
+	fi
 
-    # time
-    local rps
-    rps=(
-        # elasped time
-        $elasped_time
+	# build
+	prompt_clover:build-lprompt0 "$flag"
+	prompt_clover:build-lprompt1 "$exit_code" "$flag"
+	prompt_clover:build-rprompt "$flag"
 
-        # current time
-        "%{$reset_color%}"
-        "("
-        "%{$clover_color[currtime]%}"
-        "$(date +$clover_date_format)"
-        "%{$reset_color%}"
-        ") "
-    )
-    typeset -g clover_rprompt="${(j..)rps}"
+	# check vcs info
+	prompt_clover_params[prompt-vcs-info]=
 
-    # venv
-    typeset -g clover_venv_info="$(clover_virtualenv_info)"
+	async_worker_eval prompt_clover_vcs builtin cd -q "$PWD"
+	async_job prompt_clover_vcs prompt_clover:build-vcs-info
 
-    # status
-    typeset -g clover_prompt
-    if [[ exit_code -eq 0 ]]; then
-        clover_prompt="%{$clover_color[prompt]%}$clover_sym[prompt]"
-    else
-        clover_prompt="%{$clover_color[prompt_fail]%}$clover_sym[prompt_fail]"
-    fi
-
-    clover_render_prompt "precmd"
+	# draw
+	prompt_clover:render-prompt precmd
 }
 
-clover_preexec() {
-    typeset -g clover_last_timestamp="$((EPOCHSECONDS))"
+prompt_clover:preexec() {
+	# preexec is not called on empty command, so this var will not set to empty
+	prompt_clover_params[lastcmd]="$1"
+	(( prompt_clover_params[lastcmd-start-epoch] = $EPOCHSECONDS ))
 }
 
-clover_precmd_callback() {
-    local job="$1" code="$2" output="$3" exec_time="$4" next_pending="$6"
-    case $job in
-        clover_git_prompt_info)
-            typeset -g clover_git_status="$output"
-        ;;
-    esac
+prompt_clover:render-prompt() {
+	# NOTE: this is a shared callback for precmd and async tasks
+	local job="$1" output="$3"
 
-    clover_render_prompt
+	# save output
+	if [[ "x$job" == 'xprompt_clover:build-vcs-info' ]]; then
+		prompt_clover_params[prompt-vcs-info]="$output"
+	fi
+
+	# get templates
+	local lprompt0="${prompt_clover_params[lprompt0]}${prompt_clover_params[prompt-vcs-info]}"
+	local lprompt1="${prompt_clover_params[lprompt1]}"
+	local rprompt="${prompt_clover_params[rprompt]}"
+
+	# calculate prompt size
+	prompt_clover:helper:strlen "$lprompt0" 'prompt_clover_params[lwidth]'
+	prompt_clover:helper:strlen "$rprompt" 'prompt_clover_params[rwidth]'
+
+	# calculate space between left prompt and right prompt
+	local n_space space
+	(( n_space = $COLUMNS -1 -${prompt_clover_params[lwidth]} -${prompt_clover_params[rwidth]} ))
+	(( $n_space >= 0 )) && space=$(builtin printf "%${n_space}s")
+
+	# render
+	local -a components
+	components=(
+		"$lprompt0"
+		"$space"
+		"$rprompt"
+		"$prompt_newline"
+		"$lprompt1"
+	)
+	local ps="${(j..)components}"
+	if [[ "x$job" == 'xprecmd' ]] || [[ "x$ps" != "x${prompt_clover_params[last-prompt]}" ]]; then
+		typeset -g PROMPT="$ps"
+		zle && zle .reset-prompt
+		prompt_clover_params[last-prompt]="$ps"
+	fi
 }
 
-clover_render_prompt() {
-    local lprompt="$clover_lprompt0$clover_git_status"
-    local precmd="$lprompt$(clover_get_space $lprompt $clover_rprompt)$clover_rprompt"
+prompt_clover:build-lprompt0() {
+	local flag="$1"
 
-    local ps1
-    ps1=(
-        # precmd
-        $precmd
+	# use cache
+	[[ ! "x$flag" =~ '-rebuild ' ]] \
+	&& [[ -n "${prompt_clover_params[lprompt0]}" ]] \
+	&& return
 
-        # new line
-        $prompt_newline
+	# changes style for root user
+	local user_style
+	if [[ $UID -eq 0 ]]; then
+		user_style="${prompt_clover_styles[user:root]}"
+	else
+		user_style="${prompt_clover_styles[user:default]}"
+	fi
 
-        # venv
-        $clover_venv_info
+	# change style for non-local host
+	local host_style
+	if prompt_clover:helper:is-inside-container; then
+		host_style="${prompt_clover_styles[host:container]}"
+	elif [[ -n "$SSH_CONNECTION" ]]; then
+		host_style="${prompt_clover_styles[host:remote]}"
+	else
+		host_style="${prompt_clover_styles[host:default]}"
+	fi
 
-        # prompt
-        $clover_prompt
-        "%{$reset_color%}"
-    )
+	# build
+	local -a components
+	components=(
+		# `#` symbol before user
+		"${prompt_clover_styles[symbol:prefix]}"
+		"${prompt_clover_symbols[user:prefix]}"
+		"${prompt_clover_params[reset]}"
 
-    PROMPT="${(j..)ps1}"
+		# user
+		"$user_style"
+		'%n'
+		"${prompt_clover_params[reset]}"
 
-    # Expand the prompt for future comparision.
-    local expanded_prompt
-    expanded_prompt="${(S%%)PROMPT}"
+		# `@` symbol before host
+		"${prompt_clover_styles[symbol:prefix]}"
+		"${prompt_clover_symbols[host:prefix]}"
+		"${prompt_clover_params[reset]}"
 
-    if [[ $1 != precmd ]] && [[ $clover_last_prompt != $expanded_prompt ]]; then
-        # Redraw the prompt.
-        zle && zle .reset-prompt
-    fi
+		# host
+		"$host_style"
+		'%m'
+		"${prompt_clover_params[reset]}"
 
-    typeset -g clover_last_prompt="$expanded_prompt"
+		# `:` symbol before path
+		"${prompt_clover_styles[symbol:prefix]}"
+		"${prompt_clover_symbols[path:prefix]}"
+		"${prompt_clover_params[reset]}"
+
+		# path
+		"${prompt_clover_styles[path]}"
+		'%~'
+		"${prompt_clover_params[reset]}"
+	)
+
+	prompt_clover_params[lprompt0]="${(j..)components}"
 }
 
-clover_git_prompt_info() {
-    builtin cd -q "$1"
-    local git_head="$(git_prompt_info)"
-    if [[ -n $git_head ]]; then
-        local git_detail
+prompt_clover:build-lprompt1() {
+	local exit_code="$1" flag="$2"
+	local -a components
 
-        # git status
-        local git_status="$(git_prompt_status)"
-        if [[ -n $git_status ]]; then
-            git_detail="$git_detail$git_status"
-        fi
+	# venv
+	if prompt_clover:python:get-virtualenv-name; then
+		# build
+		if [[ "x$flag" =~ '-rebuild ' ]] || [[ -z "${prompt_clover_params[venv:prompt]}" ]]; then
+			local -a venv_components
+			venv_components=(
+				"${prompt_clover_styles[virtualenv]}"
+				"${prompt_clover_symbols[venv:prefix]}"
+				"${prompt_clover_params[venv:name]}"
+				"${prompt_clover_symbols[venv:suffix]}"
+				"${prompt_clover_params[reset]}"
+			)
+			prompt_clover_params[venv:prompt]="${(j..)venv_components}"
+		fi
 
-        # git remote
-        local git_remote="$(git_remote_status)"
-        if [[ -n $git_remote ]]; then
-            git_detail="$git_detail$git_remote"
-        fi
+		# append
+		components+=("${prompt_clover_params[venv:prompt]}")
+	fi
 
-        # output
-        if [[ -n $git_detail ]]; then
-            git_detail="[$git_detail%{$reset_color%}]"
-        fi
-        echo " <$git_head$git_detail>"
-    fi
+	# prompt
+	if (( ! $exit_code )); then
+		components+=(
+			"${prompt_clover_styles[prompt:default]}"
+			"${prompt_clover_symbols[prompt:default]}"
+			"${prompt_clover_params[reset]}"
+		)
+	else
+		components+=(
+			"${prompt_clover_styles[prompt:fail]}"
+			"${prompt_clover_symbols[prompt:fail]}"
+			"${prompt_clover_params[reset]}"
+		)
+	fi
+
+	prompt_clover_params[lprompt1]="${(j..)components}"
 }
 
-# get space to padding between lprompt and rprompt
-# https://github.com/skylerlee/zeta-zsh-theme
-clover_get_space() {
-    local str="$1$2"
-    local zero='%([BSUbfksu]|([FB]|){*})'
-    local len="${#${(S%%)str//$~zero/}}"
-    local size="$(( $COLUMNS - $len - 1 ))"
-    local space=""
-    while [[ $size -gt 0 ]]; do
-        space="$space "
-        size="$(( $size - 1 ))"
-    done
-    echo "$space"
+prompt_clover:build-rprompt() {
+	local flag="$1"
+	local -a components
+
+	# execution time
+	if [[ "x$flag" =~ '-exec-time ' ]]; then
+		local execution_time
+		(( execution_time = $EPOCHSECONDS - ${prompt_clover_params[lastcmd-start-epoch]:-EPOCHSECONDS} ))
+		if (( $execution_time > ${prompt_clover_params[min-exec-display-sec]} )); then
+			prompt_clover:helper:to-readable-time "$execution_time" 'prompt_clover_params[execution-time]'
+			components+=(
+				"${prompt_clover_styles[execution-time]}"
+				"${prompt_clover_params[execution-time]}"
+				"${prompt_clover_params[reset]}"
+				' '
+			)
+		fi
+	fi
+
+	# time
+	components+=(
+		"${prompt_clover_styles[current-time]}"
+		"${prompt_clover_symbols[current-time:prefix]}"
+		"%D{${prompt_clover_params[date-format]}}"
+		"${prompt_clover_symbols[current-time:suffix]}"
+		"${prompt_clover_params[reset]}"
+	)
+
+	prompt_clover_params[rprompt]="${(j..)components}"
 }
 
-# get python env name
-clover_virtualenv_info() {
-    # virtualenv / venv
-    # https://github.com/tonyseek/oh-my-zsh-virtualenv-prompt
-    if [ -n "$VIRTUAL_ENV" ]; then
-        if [ -f "$VIRTUAL_ENV/__name__" ]; then
-            local env_name=$(cat "$VIRTUAL_ENV/__name__")
-        elif [ $(basename "$VIRTUAL_ENV") = "__" ]; then
-            local env_name=$(basename $(dirname "$VIRTUAL_ENV"))
-        else
-            local env_name=$(basename "$VIRTUAL_ENV")
-        fi
-    fi
+prompt_clover:build-vcs-info() {
+	# configs
+	if [[ -z "${prompt_clover_params[vcs-init]}" ]]; then
+		zstyle ':vcs_info:*' max-exports 4
+		zstyle ':vcs_info:*' check-for-changes 'true'
+		zstyle ':vcs_info:*' stagedstr 'staged'
+		zstyle ':vcs_info:*' unstagedstr 'unstaged'
 
-    # anaconda
-    local condapath="$CONDA_ENV_PATH$CONDA_PREFIX"
-    if [ -n "$condapath" ]; then
-        local env_name=$(basename "$condapath")
-    fi
+		# exports branch(%b), vcs type(%s), staged changes(%u), unstaged changes(%c) and action(%a)
+		zstyle ':vcs_info:git*' formats '%b' '%s' '%u %c'
+		zstyle ':vcs_info:git*' actionformats '%b' '%s' '' '%a'
 
-    # display name
-    if [ -n "$env_name" ]; then
-        echo "%{$clover_color[venv]%}($env_name) "
-    fi
+		prompt_clover_params[vcs-init]='true'
+	fi
+
+	prompt_clover:helper:check-style-changed vcs
+
+	# get vcs info
+	vcs_info
+
+	local branch vcs_type changes action
+	branch="$vcs_info_msg_0_"
+	vcs_type="$vcs_info_msg_1_"
+	changes="$vcs_info_msg_2_"
+	action="$vcs_info_msg_3_"
+
+	# don't return vcs message when it is not in a repo
+	[[ -z "${vcs_type}" ]] && return
+
+	# perform extra checks when supported
+	local vcs_status_str
+	if [[ -n "$action" ]]; then
+		# action - don't show status
+		vcs_status_str="${prompt_clover_styles[vcs:action]}"
+		vcs_status_str+="$action"
+		vcs_status_str+="${prompt_clover_params[reset]}"
+	else
+		# normal mode
+		# run extra check on git
+		if [[ "x$vcs_type" == 'xgit' ]]; then
+			changes+=" $(prompt_clover:vcs:git-status)"
+		fi
+
+		# collect state
+		local -A vcs_status
+		for st in ${(z)changes}; do
+			vcs_status[$st]=1
+		done
+
+		# build status str in constant order
+		local -a const_status_order
+		const_status_order=(clean unstaged staged untracked ahead behind diverge)
+
+		for name in $const_status_order; do
+			if [[ -z "${vcs_status[$name]}" ]]; then
+				continue
+			fi
+			vcs_status_str+="${prompt_clover_styles[vcs:status:$name]}"
+			vcs_status_str+="${prompt_clover_symbols[vcs:status:$name]}"
+			vcs_status_str+="${prompt_clover_params[reset]}"
+		done
+	fi
+
+	# build output
+	local components
+	components=(
+		# prefix
+		"${prompt_clover_styles[vcs:prefix]}"
+		"${prompt_clover_symbols[vcs:prefix]}"
+		"${prompt_clover_params[reset]}"
+
+		# branch
+		"${prompt_clover_styles[vcs:branch]}"
+		"$branch"
+		"${prompt_clover_params[reset]}"
+	)
+
+	[[ -n "$vcs_status_str" ]] && components+=(" $vcs_status_str")
+
+	components+=(
+		# suffix
+		"${prompt_clover_styles[vcs:suffix]}"
+		"${prompt_clover_symbols[vcs:suffix]}"
+		"${prompt_clover_params[reset]}"
+	)
+
+	echo "${(j..)components}"
 }
 
-# turns seconds into human readable time
-# 165392 => 1d 21h 56m 32s
-# https://github.com/sindresorhus/pretty-time-zsh
-clover_readable_time() {
-    local human total_seconds="$1"
-    local days="$(( total_seconds / 60 / 60 / 24 ))"
-    local hours="$(( total_seconds / 60 / 60 % 24 ))"
-    local minutes="$(( total_seconds / 60 % 60 ))"
-    local seconds="$(( total_seconds % 60 ))"
-    (( days > 0 )) && human+="${days}d "
-    (( hours > 0 )) && human+="${hours}h "
-    (( minutes > 0 )) && human+="${minutes}m "
-    human+="${seconds}s"
+prompt_clover:helper:check-style-changed() {
+	local scope="$1" flag=1 key value
 
-    echo $human
+	# internal helper function to read config from `zstyle`
+	__u() {
+		local context="$1" style="$2" value="$3" output="$4"
+
+		# switch scope - vcs context are process in forked process
+		case "x$scope" in
+			x'main')	[[ "x$context" == 'xvcs:'* ]] && return;;
+			x'vcs')		[[ "x$context" != 'xvcs:'* ]] && return;;
+		esac
+
+		# check zstyle
+		zstyle -t "${prompt_clover_params[zstyle-prefix]}$context" "$style" "$value"
+		if [[ $? == 1 ]]; then
+			# code 1 - zstyle is set
+			zstyle -s "${prompt_clover_params[zstyle-prefix]}$context" "$style" "$output"
+			return 0
+		fi
+		return 1
+	}
+
+	# styles
+	for key value in ${(@kv)prompt_clover_styles}; do
+		if __u "$key" style "$value" "prompt_clover_styles[$key]"; then
+			flag=0
+		fi
+	done
+
+	# symbols
+	for key value in ${(@kv)prompt_clover_symbols}; do
+		if __u "$key" symbol "$value" "prompt_clover_symbols[$key]"; then
+			flag=0
+		fi
+	done
+
+	# others
+	if __u 'current-time' format "${prompt_clover_params[date-format]}" 'prompt_clover_params[date-format]'; then
+		flag=0
+	fi
+
+	__u 'execution-time' min-display-second "${prompt_clover_params[min-exec-display-sec]}" 'prompt_clover_params[min-exec-display-sec]'
+
+	unset -f __u
+	return $flag
 }
 
-# init
-clover_setup
+prompt_clover:helper:strlen() {
+	local input="$1" output="$2"
+	# https://superuser.com/questions/380772/removing-ansi-color-codes-from-text-stream
+	local stripped=$(command -p sed 's/\x1b\[[0-9;]*[mGKHF]//g' <<< "${(%)input}")
+	typeset -g "$output=${#stripped}"
+}
+
+prompt_clover:helper:is-inside-container() {
+	local -r cgroup_file='/proc/1/cgroup'
+	local -r nspawn_file='/run/host/container-manager'
+	false \
+	|| [[ -f '/.dockerenv' ]] \
+	|| [[ -r "$cgroup_file" && "$(< $cgroup_file)" = *(lxc|docker)* ]] \
+	|| [[ "x$container" == 'xlxc' ]] \
+	|| [[ -r "$nspawn_file" ]]
+}
+
+prompt_clover:helper:to-readable-time() {
+	local total_seconds="$1" output="$2"
+	local days hours minutes seconds human
+	(( days = total_seconds / 86400 ))
+	(( hours = total_seconds / 3600 % 24 ))
+	(( minutes = total_seconds / 60 % 60 ))
+	(( seconds = total_seconds % 60 ))
+
+	(( days > 0 )) && human+="${days}d "
+	(( hours > 0 )) && human+="${hours}h "
+	(( minutes > 0 )) && human+="${minutes}m "
+	human+="${seconds}s"
+
+	typeset -g "$output=$human"
+}
+
+prompt_clover:python:get-virtualenv-name() {
+	# virtualenv & venv
+	if [[ -n "$VIRTUAL_ENV" ]]; then
+		# find the name defined by the user (`--prompt`)
+		local virtual_env_prompt=$(
+			command -p grep 'VIRTUAL_ENV_PROMPT=' "$VIRTUAL_ENV/bin/activate" \
+			| command -p grep -oE '\(.+\)'
+		)
+		if [[ -n "$virtual_env_prompt" ]]; then
+			# successfully find. use this value
+			prompt_clover_params[venv:name]="${virtual_env_prompt:1:-1}"
+		else
+			# default: show dir name
+			prompt_clover_params[venv:name]="${VIRTUAL_ENV:t}"
+		fi
+		return 0
+	fi
+
+	# conda
+	if [[ -n "$CONDA_DEFAULT_ENV" ]]; then
+		prompt_clover_params[venv:name]="${CONDA_DEFAULT_ENV//[$'\t\r\n']}"
+		return 0
+	fi
+
+	# not found
+	return 1
+}
+
+prompt_clover:vcs:git-status() {
+	__git() {
+		GIT_OPTIONAL_LOCKS=0 command -p git "$@" 2> /dev/null
+	}
+
+	# compare with remote branch
+	# note: we don't do fetch
+	local remote_branch=$(__git rev-parse --abbrev-ref --symbolic-full-name @{u} | head -1)
+	if [[ -n "$remote_branch" ]]; then
+		local is_ahead=0 is_behind=0
+		[[ -n $(__git rev-list $remote_branch..HEAD) ]] && is_ahead=1
+		[[ -n $(__git rev-list HEAD..$remote_branch) ]] && is_behind=1
+		if [[ $is_ahead == 1 ]] && [[ $is_behind == 1 ]]; then
+			builtin echo 'diverge'
+		elif [[ $is_ahead == 1 ]]; then
+			builtin echo 'ahead'
+		elif [[ $is_behind == 1 ]]; then
+			builtin echo 'behind'
+		fi
+	fi
+
+	# read git stauts for clean and untracked files
+	local untracked_git_mode=$(__git config --get status.showUntrackedFiles)
+	if [[ "$untracked_git_mode" != 'no' ]]; then
+		untracked_git_mode='normal'
+	fi
+
+	local status_text=$(__git status --porcelain --untracked-files=${untracked_git_mode})
+	if [[ -z "$status_text" ]]; then
+		# `git status` no output - work tree clean
+		builtin echo 'clean'
+	else
+		# find untracked items. tracked items are covered by vcs_info.
+		local untracked_text=$(command -p grep --max-count=1 --extended-regexp '^\?\? ' <<< $status_text)
+		[[ -n $untracked_text ]] && builtin echo 'untracked'
+	fi
+
+	unset -f __git
+}
+
+prompt_clover:setup
