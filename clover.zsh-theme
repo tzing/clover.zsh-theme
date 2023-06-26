@@ -446,12 +446,14 @@ prompt_clover:helper:strlen() {
 }
 
 prompt_clover:helper:is-inside-container() {
+	# https://github.com/sindresorhus/pure/blob/v1.22.0/pure.zsh#L726-L733
 	local -r cgroup_file='/proc/1/cgroup'
 	local -r nspawn_file='/run/host/container-manager'
 	false \
 	|| [[ -f '/.dockerenv' ]] \
 	|| [[ -r "$cgroup_file" && "$(< $cgroup_file)" = *(lxc|docker)* ]] \
-	|| [[ "x$container" == 'xlxc' ]] \
+	|| [[ x"$container" == x'lxc' ]] \
+	|| [[ x"$container" == x'oci' ]] \
 	|| [[ -r "$nspawn_file" ]]
 }
 
