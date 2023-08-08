@@ -474,7 +474,13 @@ prompt_clover:helper:to-readable-time() {
 }
 
 prompt_clover:python:get-virtualenv-name() {
-	# virtualenv & venv
+	# virtualenv
+	if [[ -n "$VIRTUAL_ENV_PROMPT" ]]; then
+		prompt_clover_params[venv:name]="${VIRTUAL_ENV_PROMPT#\{%\}}"
+		return 0
+	fi
+
+	# venv
 	if [[ -n "$VIRTUAL_ENV" ]]; then
 		# find the name defined by the user (`--prompt`)
 		local virtual_env_prompt=$(
