@@ -484,7 +484,7 @@ prompt_clover:python:get-virtualenv-name() {
 	if [[ -n "$VIRTUAL_ENV" ]]; then
 		# find the name defined by the user (`--prompt`)
 		local virtual_env_prompt=$(
-			command -p grep 'VIRTUAL_ENV_PROMPT=' "$VIRTUAL_ENV/bin/activate" \
+			command -p grep 'VIRTUAL_ENV_PROMPT=' "$VIRTUAL_ENV/bin/activate" 2> /dev/null \
 			| command -p grep -oE '\(.+\)'
 		)
 		if [[ -n "$virtual_env_prompt" ]]; then
