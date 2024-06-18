@@ -2,7 +2,7 @@
 # Clover 🍀
 # - a configurable theme for zsh
 #
-# MIT license 2023 tzing
+# MIT license 2024 tzing
 
 typeset -gA prompt_clover_styles prompt_clover_symbols prompt_clover_params
 prompt_clover_styles=(
@@ -127,7 +127,7 @@ prompt_clover:preexec() {
 }
 
 prompt_clover:render-prompt() {
-	# NOTE: this is a shared callback for precmd and async tasks
+	# NOTE This is a shared callback for precmd and async tasks
 	local job="$1" output="$3"
 
 	# save output
@@ -140,26 +140,32 @@ prompt_clover:render-prompt() {
 	local lprompt1="${prompt_clover_params[lprompt1]}"
 	local rprompt="${prompt_clover_params[rprompt]}"
 
+	local -a components=("$lprompt0")
+
 	# calculate prompt size
 	prompt_clover:helper:strlen "$lprompt0" 'prompt_clover_params[lwidth]'
 	prompt_clover:helper:strlen "$rprompt" 'prompt_clover_params[rwidth]'
 
-	# calculate space between left prompt and right prompt
-	local n_space space
+	# add right prompt when there is enough space
+	local n_space
 	(( n_space = $COLUMNS -1 -${prompt_clover_params[lwidth]} -${prompt_clover_params[rwidth]} ))
-	(( $n_space >= 0 )) && space=$(builtin printf "%${n_space}s")
+	if (( $n_space > 0 )); then
+	 	local space=$(builtin printf "%${n_space}s")
+		components+=(
+			"$space"
+			"$rprompt"
+		)
+	fi
 
-	# render
-	local -a components
-	components=(
-		"$lprompt0"
-		"$space"
-		"$rprompt"
+	# add second line
+	components+=(
 		"$prompt_newline"
 		"$lprompt1"
 	)
 	local ps="${(j..)components}"
-	if [[ "x$job" == 'xprecmd' ]] || [[ "x$ps" != "x${prompt_clover_params[last-prompt]}" ]]; then
+
+	# render
+	if [[ x"$job" == x'precmd' ]] || [[ x"$ps" != x"${prompt_clover_params[last-prompt]}" ]]; then
 		typeset -g PROMPT="$ps"
 		zle && zle .reset-prompt
 		prompt_clover_params[last-prompt]="$ps"
